@@ -161,7 +161,8 @@ def fetch_patient_details(user_query):
     return None
 
 # ✅ Streamlit UI
-st.markdown('<p class="search-text" style="font-weight: 600; font-size: 20px;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
+st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
+
 
 
 # Search input with placeholder
