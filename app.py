@@ -104,7 +104,7 @@ custom_css = """
         margin: 20px 0;
     }
     /* Fix warning and error messages text color */
-    .stAlert {
+    .st.warning {
     color: #000000 !important;
     font-weight: bold !important;
 }
