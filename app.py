@@ -103,6 +103,12 @@ custom_css = """
         justify-content: center;
         margin: 20px 0;
     }
+    /* Fix warning and error messages text color */
+    .stAlert {
+    color: #000000 !important;
+    font-weight: bold !important;
+}
+
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
