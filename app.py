@@ -81,15 +81,7 @@ custom_css = """
         padding-bottom: 10px;
         border-bottom: 1px solid #e0e0e0;
     }
-    /* Fix Error Message Font Color */
-     div[data-testid="stAlert"][aria-label="Error"] * {
-    color: #000000 !important;  /* Force error message text to black */
-   }
-
-    /* Fix Warning Message Font Color */
-    div[data-testid="stAlert"][aria-label="Warning"] * {
-    color: #000000 !important;  /* Force warning message text to black */
-}
+    
 
 
     .highlight {
