@@ -29,10 +29,11 @@ custom_css = """
         max-width: 300px;
         height: auto;
     }
-    /* Fix Warning & Error Font Color to Black */
-    .stAlert {
+        /* Fix Warning & Error Font Color to Black */
+    div[data-testid="stAlert"] {
         color: #000000 !important; /* Force black text */
     }
+
 
     /* Search bar improvements */
     .stTextInput>div>div>input {
