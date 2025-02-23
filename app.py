@@ -7,23 +7,23 @@ import time
 # ✅ Page Configurations
 st.set_page_config(page_title="MediScope - Smart Patient Search", page_icon="🏥", layout="wide")
 
-# ✅ Apply a professional dark theme
+# ✅ Apply a professional light theme with blue accents
 custom_css = """
 <style>
     body {
-        background-color: #121212;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #000000;
         font-family: 'Arial', sans-serif;
     }
     .stTextInput>div>div>input {
-        background-color: #222;
-        color: #ffffff;
-        border: 1px solid #444;
+        background-color: #f5f5f5;
+        color: #000000;
+        border: 1px solid #cccccc;
         padding: 10px;
         border-radius: 5px;
     }
     .stButton>button {
-        background-color: #00d1ff;
+        background-color: #007bff;
         color: #ffffff;
         border-radius: 5px;
         padding: 12px;
@@ -31,29 +31,29 @@ custom_css = """
         transition: 0.3s;
     }
     .stButton>button:hover {
-        background-color: #008cba;
+        background-color: #0056b3;
     }
     .stAlert {
         border-radius: 5px;
         padding: 12px;
     }
     .patient-card {
-        background-color: #1e1e1e;
+        background-color: #f8f9fa;
         padding: 20px;
         border-radius: 10px;
-        box-shadow: 0px 0px 12px rgba(0, 209, 255, 0.5);
+        box-shadow: 0px 0px 12px rgba(0, 123, 255, 0.5);
         font-size: 16px;
         line-height: 1.6;
         margin-top: 20px;
     }
     .patient-card h3 {
-        color: #00d1ff;
+        color: #007bff;
         font-size: 24px;
         margin-bottom: 12px;
     }
     .highlight {
         font-weight: bold;
-        color: #ffffff;
+        color: #000000;
     }
 </style>
 """
