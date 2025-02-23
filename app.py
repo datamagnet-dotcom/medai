@@ -29,10 +29,6 @@ custom_css = """
         max-width: 300px;
         height: auto;
     }
-    * Fix Warning & Error Font Color to Black */
-div[data-testid="stAlert"] * {
-    color: #000000 !important;  /* Force all text inside error/warning messages to be black */
-   }
 
     /* Search bar improvements */
     .stTextInput>div>div>input {
@@ -85,6 +81,16 @@ div[data-testid="stAlert"] * {
         padding-bottom: 10px;
         border-bottom: 1px solid #e0e0e0;
     }
+    /* Fix Error Message Font Color */
+     div[data-testid="stAlert"][aria-label="Error"] * {
+    color: #000000 !important;  /* Force error message text to black */
+   }
+
+    /* Fix Warning Message Font Color */
+    div[data-testid="stAlert"][aria-label="Warning"] * {
+    color: #000000 !important;  /* Force warning message text to black */
+}
+
 
     .highlight {
         font-weight: 600;
