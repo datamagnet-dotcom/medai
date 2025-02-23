@@ -112,14 +112,19 @@ st.markdown(
             justify-content: center;
             align-items: center;
             margin-bottom: 30px;
+            width: 100%;
+        }
+        .logo-container img {
+            max-width: 300px;
         }
     </style>
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png" width="300">
+        <img src="https://github.com/datamagnet-dotcom/medai/blob/main/Karexpert.png" alt="Karexpert Logo">
     </div>
     """,
     unsafe_allow_html=True
 )
+
 
 
 # ✅ MongoDB Configuration
