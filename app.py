@@ -109,7 +109,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # ✅ Display Karexpert logo
 st.markdown("""
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/assets/Karexpert Logo.png" alt="Karexpert Logo">
+        <img src="https://github.com/datamagnet-dotcom/medai/blob/main/Karexpert.png" alt="Karexpert Logo">
     </div>
 """, unsafe_allow_html=True)
 
