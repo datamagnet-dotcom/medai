@@ -9,6 +9,17 @@ st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layou
 
 # ✅ Apply a professional dark theme
 custom_css = """
+import streamlit as st
+import pymongo
+import google.generativeai as genai
+import json
+import time
+
+# ✅ Page Configurations
+st.set_page_config(page_title="MediScope - Smart Patient Search", page_icon="🏥", layout="wide")
+
+# ✅ Apply a professional light theme with blue accents
+custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         background-color: #ffffff !important;
@@ -16,9 +27,9 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
     .stTextInput>div>div>input {
-        background-color: #f5f5f5 !important;
+        background-color: #ffffff !important;
         color: #000000 !important;
-        border: 1px solid #cccccc !important;
+        border: 2px solid #007bff !important;
         padding: 10px;
         border-radius: 5px;
     }
