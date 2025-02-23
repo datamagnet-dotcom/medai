@@ -161,7 +161,7 @@ def fetch_patient_details(user_query):
     return None
 
 # ✅ Streamlit UI
-st.markdown('<p class="search-text">Enter patient name or ID to access medical records</p>', unsafe_allow_html=True)
+st.markdown('<p class="search-text">Enter patient name  to access medical records</p>', unsafe_allow_html=True)
 
 # Search input with placeholder
 user_query = st.text_input("", placeholder="🔍 Search by patient name or ID...", key="search_input")
