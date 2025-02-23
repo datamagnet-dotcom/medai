@@ -31,13 +31,16 @@ custom_css = """
     }
 
     /* Search bar improvements */
-   .stTextInput>div>div>input {
-    background-color: #f8f9fa !important;
-    border-radius: 10px !important;
-    border: 1px solid #ced4da !important;
-    padding: 12px !important;
+    .stTextInput>div>div>input {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 2px solid #2d62ed !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        font-size: 16px !important;
+        box-shadow: 0 2px 4px rgba(45, 98, 237, 0.1) !important;
+        margin-bottom: 15px;
     }
-
 
     /* Search button styling */
    .stButton>button {
