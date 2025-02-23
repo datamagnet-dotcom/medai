@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # ✅ Step 1: Load Environment Variables (Security Fix)
 load_dotenv()
 MONGO_URI = os.getenv("mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0")
-GOOGLE_API_KEY = os.getenv("AIzaSyCmT8i5nwG8OwAhS10gBdWeB_8bEmXNtNA")
+GOOGLE_API_KEY = os.getenv("AIzaSyDzds9brrJzltcJePvaF1kMyv6hXB_P9Lw")
 
 # ✅ Step 2: Connect to MongoDB Atlas
 client = pymongo.MongoClient(MONGO_URI)
