@@ -105,6 +105,19 @@ custom_css = """
 </style>
 """
 st.image("https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png", width=300)
+st.markdown(
+    """
+    <style>
+        /* Force background to stay white */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # ✅ MongoDB Configuration
 MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
