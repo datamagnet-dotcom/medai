@@ -8,25 +8,27 @@ from pathlib import Path
 # ✅ Page Configurations
 st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered")
 
-# ✅ Apply professional theme with improved visibility
+# ✅ Apply KareXpert-inspired UI theme
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
-        background-color: #ffffff !important;
+        background-color: #f4f5f7 !important;
         color: #000000 !important;
         font-family: 'Arial', sans-serif;
     }
 
-    /* Logo container */
+    /* Centered logo container */
     .logo-container {
-        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         padding: 20px 0;
         margin-bottom: 30px;
         border-bottom: 1px solid #e0e0e0;
     }
     
     .logo-container img {
-        max-width: 300px;
+        max-width: 250px;
         height: auto;
     }
 
@@ -34,17 +36,17 @@ custom_css = """
     .stTextInput>div>div>input {
         background-color: #ffffff !important;
         color: #333333 !important;
-        border: 2px solid #2d62ed !important;
+        border: 2px solid #005bbb !important;
         padding: 15px !important;
         border-radius: 8px !important;
         font-size: 16px !important;
-        box-shadow: 0 2px 4px rgba(45, 98, 237, 0.1) !important;
+        box-shadow: 0 2px 4px rgba(0, 91, 187, 0.1) !important;
         margin-bottom: 15px;
     }
 
     /* Search button styling */
     .stButton>button {
-        background-color: #2d62ed !important;
+        background-color: #005bbb !important;
         color: #ffffff !important;
         border-radius: 8px !important;
         padding: 15px 30px !important;
@@ -58,8 +60,8 @@ custom_css = """
     }
 
     .stButton>button:hover {
-        background-color: #1e45b8 !important;
-        box-shadow: 0 4px 8px rgba(45, 98, 237, 0.2) !important;
+        background-color: #004a99 !important;
+        box-shadow: 0 4px 8px rgba(0, 91, 187, 0.2) !important;
         transform: translateY(-1px);
     }
 
@@ -70,11 +72,11 @@ custom_css = """
         border-radius: 12px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         margin-top: 30px !important;
-        border-left: 4px solid #2d62ed !important;
+        border-left: 4px solid #005bbb !important;
     }
 
     .patient-card h3 {
-        color: #2d62ed !important;
+        color: #005bbb !important;
         font-size: 24px;
         margin-bottom: 20px;
         padding-bottom: 10px;
@@ -83,7 +85,7 @@ custom_css = """
 
     .highlight {
         font-weight: 600;
-        color: #2d62ed !important;
+        color: #005bbb !important;
         min-width: 150px;
         display: inline-block;
     }
@@ -104,23 +106,17 @@ custom_css = """
     }
 </style>
 """
-st.image("https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png", width=300)
-st.markdown(
-    """
-    <style>
-        /* Force background to stay white */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown(custom_css, unsafe_allow_html=True)
 
+# ✅ Display KareXpert logo centered
+st.markdown("""
+    <div class="logo-container">
+        <img src="https://github.com/datamagnet-dotcom/medai/blob/main/Karexpert.png" alt="KareXpert Logo">
+    </div>
+""", unsafe_allow_html=True)
 
 # ✅ MongoDB Configuration
-MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = "mongodb://sainandan3mn:<db_password>@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
 collection = db["patients"]
@@ -129,6 +125,7 @@ collection = db["patients"]
 genai.configure(api_key="AIzaSyCQ7t9zx7vxu25gRCT9XLM2LQdNuX2BZoU")
 gemini_model = genai.GenerativeModel("gemini-pro")
 
+# ✅ Function to generate MongoDB query
 def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query:
@@ -145,6 +142,7 @@ def generate_mongo_query(user_query):
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
 
+# ✅ Fetch Patient Details
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
     
@@ -155,11 +153,9 @@ def fetch_patient_details(user_query):
         try:
             start_time = time.time()
             patient = collection.find_one(mongo_query, {"_id": 0})
-            
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
-            
             return patient if patient else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
@@ -169,7 +165,7 @@ def fetch_patient_details(user_query):
 # ✅ Streamlit UI
 st.markdown('<p class="search-text">Enter patient name to access medical records</p>', unsafe_allow_html=True)
 
-# Search input with placeholder
+# Search input
 user_query = st.text_input("", placeholder="🔍 Search by patient name or ID...", key="search_input")
 
 # Centered search button
@@ -184,27 +180,6 @@ if search_button:
         
         if patient_data:
             st.success("Patient Record Found")
-
-            # Display patient information
-            st.markdown(
-                f"""
-                <div class="patient-card">
-                    <h3>Patient Information</h3>
-                    <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
-                    <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
-                    <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
-                    <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
-                    <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
-                    <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
-                    <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
-                    <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
-                    <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
-                    <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
-                    <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
         else:
             st.warning("No matching patient records found")
     else:
