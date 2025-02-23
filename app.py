@@ -29,6 +29,10 @@ custom_css = """
         max-width: 300px;
         height: auto;
     }
+    /* Fix Warning & Error Font Color to Black */
+    .stAlert {
+        color: #000000 !important; /* Force black text */
+    }
 
     /* Search bar improvements */
     .stTextInput>div>div>input {
@@ -103,10 +107,8 @@ custom_css = """
         justify-content: center;
         margin: 20px 0;
     }
-    /* Fix warning and error messages text color */
-    .st.warning {
-    color: #000000 !important;
-    font-weight: bold !important;
+  
+    
 }
 
 </style>
