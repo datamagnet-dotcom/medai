@@ -2,155 +2,77 @@ import streamlit as st
 import pymongo
 import google.generativeai as genai
 import json
-import time
 
-# ✅ Page Configurations
-st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered")
-
-# ✅ Apply a professional dark theme
-custom_css = """
-<style>
+# ✅ Configure Streamlit Page
+st.set_page_config(page_title="Med AI", page_icon="🏥", layout="wide")
+st.markdown(
+    """
+    <style>
     body {
-        background-color: #000;
-        color: #fff;
+        background-color: #121212;
+        color: white;
     }
-    .stTextInput>div>div>input {
-        background-color: #333;
-        color: #fff;
-        border: 1px solid #666;
+    .stApp {
+        background-color: #121212;
     }
-    .stButton>button {
-        background-color: #fff;
-        color: #000;
-        border-radius: 5px;
-        padding: 10px;
-        font-weight: bold;
+    .stTextInput, .stTextArea, .stButton>button {
+        color: black !important;
     }
-    .stButton>button:hover {
-        background-color: #ccc;
-        color: #000;
+    .css-1cpxqw2, .css-1d391kg, .css-1v0mbdj {
+        background-color: white !important;
+        color: black !important;
     }
-    .stAlert {
-        border-radius: 5px;
-        padding: 10px;
-    }
-    .patient-card {
-        background-color: #222;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
-        font-size: 16px;
-        line-height: 1.6;
-    }
-    .patient-card h3 {
-        color: #00d1ff;
-        font-size: 22px;
-        margin-bottom: 10px;
-    }
-    .highlight {
-        font-weight: bold;
-        color: #fff;
-    }
-</style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-# ✅ MongoDB Configuration (Replace with your connection string)
-MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
+# ✅ Connect to MongoDB Atlas
+MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0
+"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
 collection = db["patients"]
 
-# ✅ Configure Gemini AI (Replace with your API Key)
+# ✅ Configure Gemini AI
 genai.configure(api_key="AIzaSyDzds9brrJzltcJePvaF1kMyv6hXB_P9Lw")
 gemini_model = genai.GenerativeModel("gemini-pro")
 
 # ✅ Convert Natural Language to MongoDB Query
 def generate_mongo_query(user_query):
-    """Converts a natural language query into a MongoDB JSON query using Gemini AI."""
-    
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query:
-
     '{user_query}'
-
     Example:
     'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
-    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
     """
-
+    response = gemini_model.generate_content(prompt)
     try:
-        response = gemini_model.generate_content(prompt)
         mongo_query = json.loads(response.text.strip())
         return mongo_query
-    except Exception as e:
-        st.error(f"❌ AI Query Generation Error: {str(e)}")
+    except json.JSONDecodeError:
         return {}
 
 # ✅ Fetch Patient Details from MongoDB
 def fetch_patient_details(user_query):
-    """Fetches patient details from MongoDB using an LLM-generated query with a timeout."""
-    
     mongo_query = generate_mongo_query(user_query)
-
     if mongo_query and "Name" in mongo_query:
         clean_name = mongo_query["Name"].strip()
-        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}  # Case-insensitive match
-
-        try:
-            start_time = time.time()
-            patient = collection.find_one(mongo_query, {"_id": 0})
-            
-            # Timeout check (Prevent long-running queries)
-            if time.time() - start_time > 5:  # 5 seconds max
-                st.error("⏳ Query took too long. Try again later.")
-                return None
-            
-            return patient if patient else None
-        except Exception as e:
-            st.error(f"❌ Database Error: {str(e)}")
-            return None
-
+        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}
+        patient = collection.find_one(mongo_query, {"_id": 0})
+        if patient:
+            return patient
     return None
 
 # ✅ Streamlit UI
-st.title("🏥 Hospital Patient Lookup")
-st.write("Search for patient details by entering their name or a relevant query.")
-
-# User input field
-user_query = st.text_input("🔎 Enter a patient's name or query", "")
-
-if st.button("Search", help="Click to search for patient details"):
-    if user_query:
-        with st.spinner("🔄 Searching..."):
-            patient_data = fetch_patient_details(user_query)
-        
-        if patient_data:
-            st.success("✅ Patient Record Found!")
-
-            # 🔹 Professional Display of Patient Information
-            st.markdown(
-                f"""
-                <div class="patient-card">
-                    <h3>👤 {patient_data.get('Name', 'N/A')}</h3>
-                    <p><span class="highlight">🆔 Age:</span> {patient_data.get('Age', 'N/A')}</p>
-                    <p><span class="highlight">⚧ Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
-                    <p><span class="highlight">🩸 Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
-                    <p><span class="highlight">🏥 Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
-                    <p><span class="highlight">🩺 Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
-                    <p><span class="highlight">📝 Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
-                    <p><span class="highlight">📅 Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
-                    <p><span class="highlight">💊 Medication:</span> {patient_data.get('Medication', 'N/A')}</p>
-                    <p><span class="highlight">🏡 Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
-                    <p><span class="highlight">💰 Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
-                    <p><span class="highlight">📝 Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+st.title("🏥 Med AI - Patient Query System")
+st.subheader("Search for patient details with ease.")
+user_query = st.text_input("Enter your query:", placeholder="E.g., Find details of patient John Doe")
+if st.button("Search"):
+    with st.spinner("Fetching details..."):
+        result = fetch_patient_details(user_query)
+        if result:
+            st.success("Patient record found:")
+            st.json(result)
         else:
-            st.warning("⚠️ No matching patient record found.")
-    else:
-        st.error("❌ Please enter a valid query.")
-
-
+            st.error("No patient record found.")
