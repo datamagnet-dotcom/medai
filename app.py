@@ -43,19 +43,20 @@ custom_css = """
     }
 
     /* Search button styling */
-    .stButton>button {
-        background-color: #2d62ed !important;
-        color: #ffffff !important;
-        border-radius: 8px !important;
-        padding: 15px 30px !important;
-        font-weight: 600 !important;
-        font-size: 16px !important;
-        transition: all 0.3s ease !important;
-        width: 200px !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        border: none !important;
-    }
+   .stButton>button {
+    background-color: #007bff !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 12px 24px !important;
+    font-size: 16px !important;
+    transition: 0.3s;
+    box-shadow: 0px 4px 6px rgba(0, 123, 255, 0.3);
+}
+.stButton>button:hover {
+    background-color: #0056b3 !important;
+    box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.5);
+}
+
 
     .stButton>button:hover {
         background-color: #1e45b8 !important;
