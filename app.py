@@ -104,14 +104,7 @@ custom_css = """
     }
 </style>
 """
-st.markdown("""
-    <div class="logo-container">
-        <img src="https://github.com/datamagnet-dotcom/medai/blob/main/Karexpert.png" alt="Karexpert Logo">
-    </div>
-""", unsafe_allow_html=True)
-
-
-
+st.image("https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png", width=300)
 
 # ✅ MongoDB Configuration
 MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
