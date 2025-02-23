@@ -4,10 +4,10 @@ import google.generativeai as genai
 import json
 import time
 
-# ✅ Set up page configuration
+# ✅ Page Configurations
 st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered")
 
-# ✅ Apply a black & white theme
+# ✅ Apply a professional dark theme
 custom_css = """
 <style>
     body {
@@ -33,6 +33,23 @@ custom_css = """
     .stAlert {
         border-radius: 5px;
         padding: 10px;
+    }
+    .patient-card {
+        background-color: #222;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    .patient-card h3 {
+        color: #00d1ff;
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+    .highlight {
+        font-weight: bold;
+        color: #fff;
     }
 </style>
 """
@@ -97,21 +114,43 @@ def fetch_patient_details(user_query):
     return None
 
 # ✅ Streamlit UI
-st.title("🏥 Hospital Patient Search")
-st.write("Enter a patient's name or related query to fetch details.")
+st.title("🏥 Hospital Patient Lookup")
+st.write("Search for patient details by entering their name or a relevant query.")
 
 # User input field
-user_query = st.text_input("🔎 Enter your query", "")
+user_query = st.text_input("🔎 Enter a patient's name or query", "")
 
-if st.button("Search", help="Click to search patient details"):
+if st.button("Search", help="Click to search for patient details"):
     if user_query:
         with st.spinner("🔄 Searching..."):
             patient_data = fetch_patient_details(user_query)
         
         if patient_data:
-            st.success("✅ Patient Found!")
-            st.json(patient_data)  # Display details in JSON format
+            st.success("✅ Patient Record Found!")
+
+            # 🔹 Professional Display of Patient Information
+            st.markdown(
+                f"""
+                <div class="patient-card">
+                    <h3>👤 {patient_data.get('Name', 'N/A')}</h3>
+                    <p><span class="highlight">🆔 Age:</span> {patient_data.get('Age', 'N/A')}</p>
+                    <p><span class="highlight">⚧ Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
+                    <p><span class="highlight">🩸 Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
+                    <p><span class="highlight">🏥 Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
+                    <p><span class="highlight">🩺 Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
+                    <p><span class="highlight">📝 Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
+                    <p><span class="highlight">📅 Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
+                    <p><span class="highlight">💊 Medication:</span> {patient_data.get('Medication', 'N/A')}</p>
+                    <p><span class="highlight">🏡 Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
+                    <p><span class="highlight">💰 Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
+                    <p><span class="highlight">📝 Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.warning("⚠️ No matching patient found.")
+            st.warning("⚠️ No matching patient record found.")
     else:
-        st.error("❌ Please enter a query.")
+        st.error("❌ Please enter a valid query.")
+
+
