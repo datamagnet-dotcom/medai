@@ -104,10 +104,22 @@ custom_css = """
     }
 </style>
 """
-st.markdown(custom_css, unsafe_allow_html=True)
-
-# ✅ Display Karexpert logo
-st.image("https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png", width=300)
+st.markdown(
+    """
+    <style>
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+    </style>
+    <div class="logo-container">
+        <img src="https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png" width="300">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ✅ MongoDB Configuration
