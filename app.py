@@ -86,13 +86,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ✅ MongoDB Configuration
-MONGO_URI = "your_mongodb_connection_string"
+MONGO_URI = "mongodb://sainandan3mn:5855@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
 collection = db["patients"]
 
 # ✅ Configure Gemini AI
-genai.configure(api_key="your_gemini_api_key")
+genai.configure(api_key="AIzaSyCQ7t9zx7vxu25gRCT9XLM2LQdNuX2BZoU")
 gemini_model = genai.GenerativeModel("gemini-pro")
 
 def generate_mongo_query(user_query):
