@@ -142,16 +142,28 @@ gemini_model = genai.GenerativeModel("gemini-pro")
 
 def generate_mongo_query(user_query):
     prompt = f"""
-    Convert the following natural language query into a MongoDB JSON query:
-    '{user_query}'
-    Example:
-    'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
-    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
+    Convert the following natural language query into a MongoDB JSON query. 
+    Consider all relevant fields and use appropriate query operators. 
+    For text fields, use case-insensitive regex matches for partial searches.
+    
+    Examples:
+    - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
+    - 'Patients with blood type O+' → {{"Blood Type": "O+"}}
+    - 'Show patients aged 30' → {{"Age": 30}}
+    - 'Patients under Dr. Smith' → {{"Doctor": {{"$regex": "Dr. Smith", "$options": "i"}}}}
+    - 'Diabetic patients' → {{"Medical Condition": {{"$regex": "diabetes", "$options": "i"}}}}
+    - 'Admitted on 2023-05-15' → {{"Date of Admission": "2023-05-15"}}
+    - 'Billing over $5000' → {{"Billing Amount": {{"$gt": 5000}}}}
+    - 'Room 205 patients' → {{"Room Number": "205"}}
+    
+    Now convert: '{user_query}'
     """
     try:
         response = gemini_model.generate_content(prompt)
-        mongo_query = json.loads(response.text.strip())
-        return mongo_query
+        return json.loads(response.text.strip().replace("'", '"'))
+    except json.JSONDecodeError:
+        st.error("❌ Failed to parse AI-generated query")
+        return {}
     except Exception as e:
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
@@ -159,20 +171,16 @@ def generate_mongo_query(user_query):
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
     
-    if mongo_query and "Name" in mongo_query:
-        clean_name = mongo_query["Name"].strip()
-        # Modified query to match first name or full name
-        mongo_query = {"Name": {"$regex": f"^{clean_name}", "$options": "i"}}
-
+    if mongo_query:
         try:
             start_time = time.time()
-            patient = collection.find_one(mongo_query, {"_id": 0})
+            patients = list(collection.find(mongo_query, {"_id": 0}).limit(50))
             
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
             
-            return patient if patient else None
+            return patients if patients else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
