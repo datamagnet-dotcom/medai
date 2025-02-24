@@ -148,28 +148,24 @@ def generate_mongo_query(user_query):
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
-
+    
     if mongo_query and "Name" in mongo_query:
         clean_name = mongo_query["Name"].strip()
-
-        # Case-insensitive, allows any part of the name to match
-        mongo_query = {"Name": {"$regex": f".*{clean_name}.*", "$options": "i"}}
+        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}
 
         try:
             start_time = time.time()
-            patients = list(collection.find(mongo_query, {"_id": 0}))  # Get all matching results
-
+            patient = collection.find_one(mongo_query, {"_id": 0})
+            
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
-
-            return patients if patients else None
+            
+            return patient if patient else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
     return None
-
-
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
@@ -189,31 +185,30 @@ if search_button:
         with st.spinner("Searching records..."):
             patient_data = fetch_patient_details(user_query)
         
-             if patient_data:
-               st.success("Patient Record(s) Found")
+        if patient_data:
+            st.success("Patient Record Found")
 
-                for patient in patient_data:  # Loop through multiple results
-        st.markdown(
-            f"""
-            <div class="patient-card">
-                <h3>Patient Information</h3>
-                <p><span class="highlight">Name:</span> {patient.get('Name', 'N/A')}</p>
-                <p><span class="highlight">Age:</span> {patient.get('Age', 'N/A')}</p>
-                <p><span class="highlight">Gender:</span> {patient.get('Gender', 'N/A')}</p>
-                <p><span class="highlight">Blood Type:</span> {patient.get('Blood Type', 'N/A')}</p>
-                <p><span class="highlight">Hospital:</span> {patient.get('Hospital', 'N/A')}</p>
-                <p><span class="highlight">Doctor:</span> {patient.get('Doctor', 'N/A')}</p>
-                <p><span class="highlight">Medical Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
-                <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
-                <p><span class="highlight">Room Number:</span> {patient.get('Room Number', 'N/A')}</p>
-                <p><span class="highlight">Billing Amount:</span> {patient.get('Billing Amount', 'N/A')}</p>
-                <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-else:
-    st.warning("No matching patient records found")
-  
+            # Display patient information
+            st.markdown(
+                f"""
+                <div class="patient-card">
+                    <h3>Patient Information</h3>
+                    <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
+                    <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
+                    <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
+                    <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
+                    <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
+                    <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
+                    <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
+                    <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
+                    <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
+                    <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
+                    <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("No matching patient records found")
     else:
         st.error("Please enter a search term")
