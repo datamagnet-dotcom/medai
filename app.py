@@ -145,8 +145,10 @@ def generate_mongo_query(user_query):
     Convert the following natural language query into a MongoDB JSON query:
     '{user_query}'
     Example:
-    'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
-    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
+    'Find details of patient Bobby Jackson' -> {"Name": "Bobby Jackson"}
+    'Who is Bobby Jackson?' -> {"Name": "Bobby Jackson"}
+    'Find patients above 50 with diabetes' -> {"Age": {"$gt": 50}, "Medical Condition": "Diabetes"}
+    'List all patients admitted in 2024' -> {"Date of Admission": {"$regex": "^2024", "$options": "i"}}
     """
     try:
         response = gemini_model.generate_content(prompt)
@@ -156,14 +158,15 @@ def generate_mongo_query(user_query):
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
 
-def fetch_patient_details(user_query):
+def fetch_patient_details(user_query, collection):
     mongo_query = generate_mongo_query(user_query)
     
-    if mongo_query and "Name" in mongo_query:
-        clean_name = mongo_query["Name"].strip()
-        # Modified query to match first name or full name
-        mongo_query = {"Name": {"$regex": f"^{clean_name}", "$options": "i"}}
-
+    if mongo_query:
+        # Modify query for case-insensitive regex match where applicable
+        for key, value in mongo_query.items():
+            if isinstance(value, str):
+                mongo_query[key] = {"$regex": f"^{value}", "$options": "i"}
+        
         try:
             start_time = time.time()
             patient = collection.find_one(mongo_query, {"_id": 0})
