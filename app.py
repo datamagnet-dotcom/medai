@@ -5,7 +5,7 @@ import json
 import time
 from pathlib import Path
 
-[Previous imports and configurations remain exactly the same...]
+
 
 def generate_mongo_query(user_query):
     prompt = f"""
