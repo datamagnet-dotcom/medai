@@ -151,21 +151,24 @@ def fetch_patient_details(user_query):
     
     if mongo_query and "Name" in mongo_query:
         clean_name = mongo_query["Name"].strip()
-        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}
+        
+        # Allow partial matches (e.g., "Bobby" will match "Bobby Jackson")
+        mongo_query = {"Name": {"$regex": clean_name, "$options": "i"}}
 
         try:
             start_time = time.time()
-            patient = collection.find_one(mongo_query, {"_id": 0})
+            patients = list(collection.find(mongo_query, {"_id": 0}))  # Get all matching results
             
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
             
-            return patient if patient else None
+            return patients if patients else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
     return None
+
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
