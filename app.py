@@ -152,6 +152,7 @@ def generate_mongo_query(user_query):
     """
     try:
         response = gemini_model.generate_content(prompt)
+        print("AI Response:", response.text.strip())  # Debugging log
         mongo_query = json.loads(response.text.strip())
         return mongo_query
     except Exception as e:
@@ -159,10 +160,17 @@ def generate_mongo_query(user_query):
         return {}
 
 def fetch_patient_details(user_query, collection):
+    print("User Query:", user_query)  # Debugging log
+    print("Collection Type:", type(collection))  # Debugging log
+    
+    if collection is None:
+        st.error("❌ Database connection error: Collection is None")
+        return None
+    
     mongo_query = generate_mongo_query(user_query)
+    print("Generated Mongo Query:", mongo_query)  # Debugging log
     
     if mongo_query:
-        # Modify query for case-insensitive regex match where applicable
         for key, value in mongo_query.items():
             if isinstance(value, str):
                 mongo_query[key] = {"$regex": f"^{value}", "$options": "i"}
@@ -175,6 +183,7 @@ def fetch_patient_details(user_query, collection):
                 st.error("⏳ Query took too long. Try again later.")
                 return None
             
+            print("Patient Data Found:", patient)  # Debugging log
             return patient if patient else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
