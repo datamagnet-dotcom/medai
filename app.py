@@ -8,9 +8,108 @@ from pathlib import Path
 # ✅ Page Configurations
 st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered")
 
-# [Previous CSS styles remain unchanged]
+# ✅ Apply professional theme with improved visibility
 custom_css = """
-[Your existing CSS content]
+<style>
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Arial', sans-serif;
+    }
+
+    /* Logo container */
+    .logo-container {
+        text-align: center;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .logo-container img {
+        max-width: 300px;
+        height: auto;
+    }
+
+    /* Search bar improvements */
+    .stTextInput>div>div>input {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 2px solid #2d62ed !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        font-size: 16px !important;
+        box-shadow: 0 2px 4px rgba(45, 98, 237, 0.1) !important;
+        margin-bottom: 15px;
+    }
+
+    /* Search button styling */
+   .stButton>button {
+    background-color: #007bff !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 12px 24px !important;
+    font-size: 16px !important;
+    transition: 0.3s;
+    box-shadow: 0px 4px 6px rgba(0, 123, 255, 0.3);
+}
+.stButton>button:hover {
+    background-color: #0056b3 !important;
+    box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.5);
+}
+
+
+    .stButton>button:hover {
+        background-color: #1e45b8 !important;
+        box-shadow: 0 4px 8px rgba(45, 98, 237, 0.2) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Patient card styling */
+    .patient-card {
+        background-color: #ffffff !important;
+        padding: 25px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        margin-top: 30px !important;
+        border-left: 4px solid #2d62ed !important;
+    }
+
+    .patient-card h3 {
+        color: #2d62ed !important;
+        font-size: 24px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+
+
+    .highlight {
+        font-weight: 600;
+        color: #2d62ed !important;
+        min-width: 150px;
+        display: inline-block;
+    }
+
+    /* Search text styling */
+    .search-text {
+        color: #333333 !important;
+        font-size: 18px !important;
+        margin: 20px 0 !important;
+        text-align: center;
+    }
+
+    /* Center container */
+    .center-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+    }
+  
+    
+}
+
+</style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
@@ -35,10 +134,9 @@ def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query:
     '{user_query}'
-    Consider both full name and first name matches.
     Example:
-    'Find details of patient Bobby Jackson' -> {{"Name": {{"$regex": "Bobby.*", "$options": "i"}}}}
-    'Who is Bobby?' -> {{"Name": {{"$regex": "Bobby.*", "$options": "i"}}}}
+    'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
+    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
     """
     try:
         response = gemini_model.generate_content(prompt)
@@ -52,26 +150,18 @@ def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
     
     if mongo_query and "Name" in mongo_query:
-        clean_name = mongo_query["Name"].strip() if isinstance(mongo_query["Name"], str) else mongo_query["Name"]["$regex"].replace(".*", "").strip()
-        
-        # Create a query that matches either the full name or starts with the given name
-        mongo_query = {
-            "$or": [
-                {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}},  # Exact match
-                {"Name": {"$regex": f"^{clean_name}\\s", "$options": "i"}}  # Starts with the given name
-            ]
-        }
+        clean_name = mongo_query["Name"].strip()
+        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}
 
         try:
             start_time = time.time()
-            # Find all matching patients
-            patients = list(collection.find(mongo_query, {"_id": 0}))
+            patient = collection.find_one(mongo_query, {"_id": 0})
             
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
             
-            return patients if patients else None
+            return patient if patient else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
@@ -79,6 +169,8 @@ def fetch_patient_details(user_query):
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
+
+
 
 # Search input with placeholder
 user_query = st.text_input("", placeholder="🔍 Search by patient name or ID...", key="search_input")
@@ -91,32 +183,31 @@ st.markdown('</div>', unsafe_allow_html=True)
 if search_button:
     if user_query:
         with st.spinner("Searching records..."):
-            patients_data = fetch_patient_details(user_query)
+            patient_data = fetch_patient_details(user_query)
         
-        if patients_data:
-            st.success(f"Found {len(patients_data)} matching patient(s)")
+        if patient_data:
+            st.success("Patient Record Found")
 
-            # Display each patient's information
-            for patient_data in patients_data:
-                st.markdown(
-                    f"""
-                    <div class="patient-card">
-                        <h3>Patient Information</h3>
-                        <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
-                        <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
-                        <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
-                        <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
-                        <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
-                        <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
-                        <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
-                        <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
-                        <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
-                        <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
-                        <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            # Display patient information
+            st.markdown(
+                f"""
+                <div class="patient-card">
+                    <h3>Patient Information</h3>
+                    <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
+                    <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
+                    <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
+                    <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
+                    <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
+                    <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
+                    <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
+                    <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
+                    <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
+                    <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
+                    <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
             st.warning("No matching patient records found")
     else:
