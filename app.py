@@ -141,37 +141,43 @@ genai.configure(api_key="AIzaSyCQ7t9zx7vxu25gRCT9XLM2LQdNuX2BZoU")
 gemini_model = genai.GenerativeModel("gemini-pro")
 
 def generate_mongo_query(user_query):
-    # Simplified query to search across all relevant fields
-    return {
-        "$or": [
-            {"Name": {"$regex": user_query.strip(), "$options": "i"}},
-            {"Doctor": {"$regex": user_query.strip(), "$options": "i"}},
-            {"Medical Condition": {"$regex": user_query.strip(), "$options": "i"}},
-            {"Blood Type": {"$regex": user_query.strip(), "$options": "i"}},
-            {"Hospital": {"$regex": user_query.strip(), "$options": "i"}},
-            {"Room Number": {"$regex": str(user_query).strip(), "$options": "i"}},
-            {"Test Results": {"$regex": user_query.strip(), "$options": "i"}}
-        ]
-    }
+    prompt = f"""
+    Convert the following natural language query into a MongoDB JSON query:
+    '{user_query}'
+    Example:
+    'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
+    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
+    """
+    try:
+        response = gemini_model.generate_content(prompt)
+        mongo_query = json.loads(response.text.strip())
+        return mongo_query
+    except Exception as e:
+        st.error(f"❌ AI Query Generation Error: {str(e)}")
+        return {}
 
 def fetch_patient_details(user_query):
-    if not user_query:
-        return None
-        
-    search_query = generate_mongo_query(user_query)
+    mongo_query = generate_mongo_query(user_query)
     
-    try:
-        start_time = time.time()
-        patients = list(collection.find(search_query, {"_id": 0}).limit(10))  # Limit to 10 results for performance
-        
-        if time.time() - start_time > 5:
-            st.error("⏳ Query took too long. Try again later.")
+    if mongo_query and "Name" in mongo_query:
+        clean_name = mongo_query["Name"].strip()
+        # Modified query to match first name or full name
+        mongo_query = {"Name": {"$regex": f"^{clean_name}", "$options": "i"}}
+
+        try:
+            start_time = time.time()
+            patient = collection.find_one(mongo_query, {"_id": 0})
+            
+            if time.time() - start_time > 5:
+                st.error("⏳ Query took too long. Try again later.")
+                return None
+            
+            return patient if patient else None
+        except Exception as e:
+            st.error(f"❌ Database Error: {str(e)}")
             return None
-        
-        return patients if patients else None
-    except Exception as e:
-        st.error(f"❌ Database Error: {str(e)}")
-        return None
+    return None
+
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
 
