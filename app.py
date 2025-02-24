@@ -140,6 +140,21 @@ collection = db["patients"]
 genai.configure(api_key="AIzaSyCQ7t9zx7vxu25gRCT9XLM2LQdNuX2BZoU")
 gemini_model = genai.GenerativeModel("gemini-pro")
 
+import json
+import time
+import streamlit as st
+from pymongo import MongoClient
+
+# Establish MongoDB Connection
+try:
+    client = MongoClient("mongodb+srv://your_mongo_uri")  # Replace with actual URI
+    db = client["your_database_name"]  # Replace with actual DB name
+    collection = db["your_collection_name"]  # Replace with actual collection name
+    print("✅ Connected to MongoDB successfully.")
+except Exception as e:
+    collection = None
+    st.error(f"❌ MongoDB Connection Error: {str(e)}")
+
 def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query:
@@ -159,7 +174,7 @@ def generate_mongo_query(user_query):
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
 
-def fetch_patient_details(user_query, collection):
+def fetch_patient_details(user_query):
     print("User Query:", user_query)  # Debugging log
     print("Collection Type:", type(collection))  # Debugging log
     
