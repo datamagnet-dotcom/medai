@@ -17,6 +17,7 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
+    /* Logo container */
     .logo-container {
         text-align: center;
         padding: 20px 0;
@@ -29,6 +30,7 @@ custom_css = """
         height: auto;
     }
 
+    /* Search bar improvements */
     .stTextInput>div>div>input {
         background-color: #ffffff !important;
         color: #333333 !important;
@@ -36,21 +38,33 @@ custom_css = """
         padding: 15px !important;
         border-radius: 8px !important;
         font-size: 16px !important;
+        box-shadow: 0 2px 4px rgba(45, 98, 237, 0.1) !important;
+        margin-bottom: 15px;
     }
 
-    .stButton>button {
-        background-color: #007bff !important;
-        color: #ffffff !important;
-        border-radius: 20px !important;
-        padding: 12px 24px !important;
-        font-size: 16px !important;
-        box-shadow: 0px 4px 6px rgba(0, 123, 255, 0.3);
-    }
+    /* Search button styling */
+   .stButton>button {
+    background-color: #007bff !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 12px 24px !important;
+    font-size: 16px !important;
+    transition: 0.3s;
+    box-shadow: 0px 4px 6px rgba(0, 123, 255, 0.3);
+}
+.stButton>button:hover {
+    background-color: #0056b3 !important;
+    box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.5);
+}
+
+
     .stButton>button:hover {
-        background-color: #0056b3 !important;
-        box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.5);
+        background-color: #1e45b8 !important;
+        box-shadow: 0 4px 8px rgba(45, 98, 237, 0.2) !important;
+        transform: translateY(-1px);
     }
 
+    /* Patient card styling */
     .patient-card {
         background-color: #ffffff !important;
         padding: 25px !important;
@@ -74,6 +88,37 @@ custom_css = """
         min-width: 150px;
         display: inline-block;
     }
+
+    /* Search text styling */
+    .search-text {
+        color: #333333 !important;
+        font-size: 18px !important;
+        margin: 20px 0 !important;
+        text-align: center;
+    }
+
+    /* Center container */
+    .center-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+    }
+
+    /* Error and warning message styling */
+    .stAlert {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+    }
+    
+    div[data-baseweb="notification"] {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+    }
+}
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -86,7 +131,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ✅ MongoDB Configuration
-MONGO_URI = "mongodb://sainandan3mn:5855@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = "mongodb://sainandan3mn:1234@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
 collection = db["patients"]
@@ -97,25 +142,16 @@ gemini_model = genai.GenerativeModel("gemini-pro")
 
 def generate_mongo_query(user_query):
     prompt = f"""
-    Convert the following natural language query into a MongoDB JSON query. 
-    - Support name, age, condition, doctor, blood type, admission date, billing, and room number.
-    - Use regex for partial matches (e.g., "John" → matches all Johns).
-    - Support operators like `$gt`, `$lt`, and `$regex` for flexible searches.
-
-    Examples:
-    - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
-    - 'Diabetic patients' → {{"Medical Condition": {{"$regex": "diabetes", "$options": "i"}}}}
-    - 'Billing over $5000' → {{"Billing Amount": {{"$gt": 5000}}}}
-    - 'Room 205 patients' → {{"Room Number": "205"}}
-
-    Now convert: '{user_query}'
+    Convert the following natural language query into a MongoDB JSON query:
+    '{user_query}'
+    Example:
+    'Find details of patient Bobby Jackson' -> {{"Name": "Bobby Jackson"}}
+    'Who is Bobby Jackson?' -> {{"Name": "Bobby Jackson"}}
     """
     try:
         response = gemini_model.generate_content(prompt)
-        return json.loads(response.text.strip().replace("'", '"'))
-    except json.JSONDecodeError:
-        st.error("❌ Failed to parse AI-generated query")
-        return {}
+        mongo_query = json.loads(response.text.strip())
+        return mongo_query
     except Exception as e:
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
@@ -123,16 +159,20 @@ def generate_mongo_query(user_query):
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
     
-    if mongo_query:
+    if mongo_query and "Name" in mongo_query:
+        clean_name = mongo_query["Name"].strip()
+        # Modified query to match first name or full name
+        mongo_query = {"Name": {"$regex": f"^{clean_name}", "$options": "i"}}
+
         try:
             start_time = time.time()
-            patients = list(collection.find(mongo_query, {"_id": 0}).limit(50))
+            patient = collection.find_one(mongo_query, {"_id": 0})
             
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
             
-            return patients if patients else None
+            return patient if patient else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
@@ -141,38 +181,43 @@ def fetch_patient_details(user_query):
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
 
-user_query = st.text_input("", placeholder="🔍 Search by patient name, condition, doctor, or other criteria...", key="search_input")
+# Search input with placeholder
+user_query = st.text_input("", placeholder="🔍 Search by patient name or ID...", key="search_input")
 
+# Centered search button
 st.markdown('<div class="center-container">', unsafe_allow_html=True)
 search_button = st.button("Search Records")
 st.markdown('</div>', unsafe_allow_html=True)
 
 if search_button:
     if user_query:
-        with st.spinner("Analyzing query and searching records..."):
-            patients = fetch_patient_details(user_query)
+        with st.spinner("Searching records..."):
+            patient_data = fetch_patient_details(user_query)
         
-        if patients:
-            st.success(f"Found {len(patients)} matching records")
-            for patient in patients:
-                st.markdown(
-                    f"""
-                    <div class="patient-card">
-                        <h3>{patient.get('Name', 'Unknown Patient')}</h3>
-                        <p><span class="highlight">Age:</span> {patient.get('Age', 'N/A')}</p>
-                        <p><span class="highlight">Gender:</span> {patient.get('Gender', 'N/A')}</p>
-                        <p><span class="highlight">Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
-                        <p><span class="highlight">Doctor:</span> {patient.get('Doctor', 'N/A')}</p>
-                        <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
-                        <p><span class="highlight">Blood Type:</span> {patient.get('Blood Type', 'N/A')}</p>
-                        <p><span class="highlight">Room:</span> {patient.get('Room Number', 'N/A')}</p>
-                        <p><span class="highlight">Billing:</span> ${patient.get('Billing Amount', 'N/A'):,}</p>
-                        <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+        if patient_data:
+            st.success("Patient Record Found")
+
+            # Display patient information
+            st.markdown(
+                f"""
+                <div class="patient-card">
+                    <h3>Patient Information</h3>
+                    <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
+                    <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
+                    <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
+                    <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
+                    <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
+                    <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
+                    <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
+                    <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
+                    <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
+                    <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
+                    <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
             st.warning("No matching patient records found")
     else:
-        st.error("Please enter a search term")
+        st.error("Please enter a search term") 
