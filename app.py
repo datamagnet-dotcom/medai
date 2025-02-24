@@ -82,8 +82,6 @@ custom_css = """
         border-bottom: 1px solid #e0e0e0;
     }
     
-
-
     .highlight {
         font-weight: 600;
         color: #2d62ed !important;
@@ -105,10 +103,22 @@ custom_css = """
         justify-content: center;
         margin: 20px 0;
     }
-  
-    
-}
 
+    /* Error and warning message styling */
+    .stAlert {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+    }
+    
+    div[data-baseweb="notification"] {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+    }
+}
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -151,7 +161,8 @@ def fetch_patient_details(user_query):
     
     if mongo_query and "Name" in mongo_query:
         clean_name = mongo_query["Name"].strip()
-        mongo_query = {"Name": {"$regex": f"^{clean_name}$", "$options": "i"}}
+        # Modified query to match first name or full name
+        mongo_query = {"Name": {"$regex": f"^{clean_name}", "$options": "i"}}
 
         try:
             start_time = time.time()
@@ -169,8 +180,6 @@ def fetch_patient_details(user_query):
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient name to access medical records</p>', unsafe_allow_html=True)
-
-
 
 # Search input with placeholder
 user_query = st.text_input("", placeholder="🔍 Search by patient name or ID...", key="search_input")
