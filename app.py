@@ -148,26 +148,27 @@ def generate_mongo_query(user_query):
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
-    
+
     if mongo_query and "Name" in mongo_query:
         clean_name = mongo_query["Name"].strip()
-        
-        # Allow partial matches (e.g., "Bobby" will match "Bobby Jackson")
-        mongo_query = {"Name": {"$regex": clean_name, "$options": "i"}}
+
+        # Case-insensitive, allows any part of the name to match
+        mongo_query = {"Name": {"$regex": f".*{clean_name}.*", "$options": "i"}}
 
         try:
             start_time = time.time()
             patients = list(collection.find(mongo_query, {"_id": 0}))  # Get all matching results
-            
+
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
-            
+
             return patients if patients else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             return None
     return None
+
 
 
 # ✅ Streamlit UI
