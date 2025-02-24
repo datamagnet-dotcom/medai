@@ -189,30 +189,31 @@ if search_button:
         with st.spinner("Searching records..."):
             patient_data = fetch_patient_details(user_query)
         
-        if patient_data:
-            st.success("Patient Record Found")
+             if patient_data:
+               st.success("Patient Record(s) Found")
 
-            # Display patient information
-            st.markdown(
-                f"""
-                <div class="patient-card">
-                    <h3>Patient Information</h3>
-                    <p><span class="highlight">Name:</span> {patient_data.get('Name', 'N/A')}</p>
-                    <p><span class="highlight">Age:</span> {patient_data.get('Age', 'N/A')}</p>
-                    <p><span class="highlight">Gender:</span> {patient_data.get('Gender', 'N/A')}</p>
-                    <p><span class="highlight">Blood Type:</span> {patient_data.get('Blood Type', 'N/A')}</p>
-                    <p><span class="highlight">Hospital:</span> {patient_data.get('Hospital', 'N/A')}</p>
-                    <p><span class="highlight">Doctor:</span> {patient_data.get('Doctor', 'N/A')}</p>
-                    <p><span class="highlight">Medical Condition:</span> {patient_data.get('Medical Condition', 'N/A')}</p>
-                    <p><span class="highlight">Admission Date:</span> {patient_data.get('Date of Admission', 'N/A')}</p>
-                    <p><span class="highlight">Room Number:</span> {patient_data.get('Room Number', 'N/A')}</p>
-                    <p><span class="highlight">Billing Amount:</span> {patient_data.get('Billing Amount', 'N/A')}</p>
-                    <p><span class="highlight">Test Results:</span> {patient_data.get('Test Results', 'N/A')}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        else:
-            st.warning("No matching patient records found")
+                for patient in patient_data:  # Loop through multiple results
+        st.markdown(
+            f"""
+            <div class="patient-card">
+                <h3>Patient Information</h3>
+                <p><span class="highlight">Name:</span> {patient.get('Name', 'N/A')}</p>
+                <p><span class="highlight">Age:</span> {patient.get('Age', 'N/A')}</p>
+                <p><span class="highlight">Gender:</span> {patient.get('Gender', 'N/A')}</p>
+                <p><span class="highlight">Blood Type:</span> {patient.get('Blood Type', 'N/A')}</p>
+                <p><span class="highlight">Hospital:</span> {patient.get('Hospital', 'N/A')}</p>
+                <p><span class="highlight">Doctor:</span> {patient.get('Doctor', 'N/A')}</p>
+                <p><span class="highlight">Medical Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
+                <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
+                <p><span class="highlight">Room Number:</span> {patient.get('Room Number', 'N/A')}</p>
+                <p><span class="highlight">Billing Amount:</span> {patient.get('Billing Amount', 'N/A')}</p>
+                <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+else:
+    st.warning("No matching patient records found")
+  
     else:
         st.error("Please enter a search term")
