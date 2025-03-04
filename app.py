@@ -3,7 +3,6 @@ import pymongo
 import google.generativeai as genai
 import json
 import time
-import re
 from pathlib import Path
 
 # ✅ Page Configurations
