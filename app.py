@@ -138,7 +138,9 @@ def generate_mongo_query(user_query):
     Convert the following natural language query into a MongoDB JSON query.
     Consider all relevant fields and use appropriate query operators.
     For text fields, use case-insensitive regex matches for partial searches.
-
+    
+    IMPORTANT: Return ONLY the valid JSON query with no additional text, explanation, or code formatting.
+    
     Examples:
     - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
     - 'Patients with blood type O+' → {{"Blood Type": "O+"}}
@@ -153,13 +155,48 @@ def generate_mongo_query(user_query):
     """
     try:
         response = gemini_model.generate_content(prompt)
-        return json.loads(response.text.strip().replace("'", '"'))
-    except json.JSONDecodeError:
-        st.error("❌ Failed to parse AI-generated query")
-        return {}
+        response_text = response.text.strip()
+        
+        # Clean up the response to ensure it's valid JSON
+        # Remove potential markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+            
+        # Replace single quotes with double quotes for JSON validity
+        response_text = response_text.replace("'", '"')
+        
+        # Logging for debugging
+        st.session_state['last_ai_response'] = response_text
+        
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            # Fallback: Try to extract anything that looks like JSON
+            import re
+            json_pattern = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_pattern:
+                try:
+                    return json.loads(json_pattern.group())
+                except:
+                    pass
+            
+            # Last resort: Create a basic query from the user input
+            return {"$or": [
+                {"Name": {"$regex": user_query, "$options": "i"}},
+                {"Medical Condition": {"$regex": user_query, "$options": "i"}},
+                {"Doctor": {"$regex": user_query, "$options": "i"}}
+            ]}
+            
     except Exception as e:
         st.error(f"❌ AI Query Generation Error: {str(e)}")
-        return {}
+        # Fallback query
+        return {"$or": [
+            {"Name": {"$regex": user_query, "$options": "i"}},
+            {"Medical Condition": {"$regex": user_query, "$options": "i"}},
+            {"Doctor": {"$regex": user_query, "$options": "i"}}
+        ]}
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
 
