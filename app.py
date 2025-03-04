@@ -136,8 +136,7 @@ gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query.
-    Consider all relevant fields and use appropriate query operators.
-    For text fields, use case-insensitive regex matches for partial searches.
+    Return ONLY a valid JSON object with no extra text, code block markers, or explanations.
 
     Examples:
     - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
@@ -153,13 +152,22 @@ def generate_mongo_query(user_query):
     """
     try:
         response = gemini_model.generate_content(prompt)
-        return json.loads(response.text.strip().replace("'", '"'))
+
+        # Ensure it's a proper JSON response
+        response_text = response.text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:-3].strip()  # Remove ```json and ending ```
+        
+        query_json = json.loads(response_text)
+        return query_json
+
     except json.JSONDecodeError:
-        st.error("❌ Failed to parse AI-generated query")
+        st.error("❌ AI-generated response is not valid JSON")
         return {}
     except Exception as e:
         st.error(f"❌ AI Query Generation Error: {str(e)}")
         return {}
+
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
