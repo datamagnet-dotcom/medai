@@ -200,11 +200,30 @@ def generate_mongo_query(user_query):
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
 
+    if debug_mode:
+        st.subheader("MongoDB Query")
+        st.code(json.dumps(mongo_query, indent=4), language="json")
+
     if mongo_query:
         try:
             start_time = time.time()
-            patients = list(collection.find(mongo_query, {"_id": 0}).limit(50))
-
+            # Add unique patient filtering by adding a distinct pipeline stage
+            # This ensures we only get unique patient records
+            pipeline = [
+                {"$match": mongo_query},
+                {"$group": {
+                    "_id": "$Name",  # Group by name to eliminate duplicates
+                    "doc": {"$first": "$$ROOT"}  # Keep the first document for each name
+                }},
+                {"$replaceRoot": {"newRoot": "$doc"}},  # Replace the root with the original document
+                {"$project": {"_id": 0}}  # Remove the _id field
+            ]
+            
+            patients = list(collection.aggregate(pipeline, allowDiskUse=True))
+            
+            if debug_mode:
+                st.write(f"Total records found: {len(patients)}")
+            
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
@@ -212,6 +231,8 @@ def fetch_patient_details(user_query):
             return patients if patients else None
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
+            if debug_mode:
+                st.exception(e)
             return None
     return None
 
