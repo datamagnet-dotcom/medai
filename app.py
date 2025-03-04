@@ -131,8 +131,8 @@ db = client["hospital_db"]
 collection = db["patients"]
 
 # ✅ Configure Gemini AI
-genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
-gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
+genai.configure(api_key="AIzaSyAFnVZdH90z8H6hXtsMT3-ITuOtc_HySQw")
+gemini_model = genai.GenerativeModel(model="gemini-2.0-flash", api_key="AIzaSyAFnVZdH90z8H6hXtsMT3-ITuOtc_HySQw")
 
 def generate_mongo_query(user_query):
     prompt = f"""
