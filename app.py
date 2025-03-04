@@ -132,7 +132,7 @@ collection = db["patients"]
 
 # ✅ Configure Gemini AI
 genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
-gemini_model = genai.GenerativeModel("gemini-pro")
+gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
 
 def generate_mongo_query(user_query):
     prompt = f"""
