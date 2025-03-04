@@ -266,7 +266,7 @@ if search_button:
             patients = fetch_patient_details(user_query)
 
         if patients:
-            st.success(f"Found {len(patients)} unique patient records")
+            st.success(f"Found {len(patients)} matching records")
             for patient in patients:
                 st.markdown(
                     f"""
