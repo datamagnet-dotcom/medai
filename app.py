@@ -3,6 +3,7 @@ import pymongo
 import google.generativeai as genai
 import json
 import time
+import re
 from pathlib import Path
 
 # ✅ Page Configurations
@@ -133,6 +134,10 @@ collection = db["patients"]
 # ✅ Configure Gemini AI
 genai.configure(api_key="AIzaSyAFnVZdH90z8H6hXtsMT3-ITuOtc_HySQw")
 gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+
+# Add debug mode toggle in sidebar
+debug_mode = st.sidebar.checkbox("Debug Mode", False)
+
 def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query.
@@ -157,6 +162,10 @@ def generate_mongo_query(user_query):
         response = gemini_model.generate_content(prompt)
         response_text = response.text.strip()
         
+        if debug_mode:
+            st.subheader("AI Response (Debug Mode)")
+            st.code(response_text)
+        
         # Clean up the response to ensure it's valid JSON
         # Remove potential markdown code blocks
         if "```json" in response_text:
@@ -167,22 +176,27 @@ def generate_mongo_query(user_query):
         # Replace single quotes with double quotes for JSON validity
         response_text = response_text.replace("'", '"')
         
-        # Logging for debugging
-        st.session_state['last_ai_response'] = response_text
-        
         try:
             return json.loads(response_text)
         except json.JSONDecodeError:
+            if debug_mode:
+                st.error("JSON Decode Error - Attempting fallback parsing")
+            
             # Fallback: Try to extract anything that looks like JSON
-            import re
             json_pattern = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_pattern:
                 try:
-                    return json.loads(json_pattern.group())
+                    extracted_json = json_pattern.group()
+                    if debug_mode:
+                        st.code(extracted_json, language="json")
+                    return json.loads(extracted_json)
                 except:
-                    pass
+                    if debug_mode:
+                        st.error("Fallback extraction failed")
             
             # Last resort: Create a basic query from the user input
+            if debug_mode:
+                st.warning("Using default search pattern")
             return {"$or": [
                 {"Name": {"$regex": user_query, "$options": "i"}},
                 {"Medical Condition": {"$regex": user_query, "$options": "i"}},
@@ -190,13 +204,15 @@ def generate_mongo_query(user_query):
             ]}
             
     except Exception as e:
-        st.error(f"❌ AI Query Generation Error: {str(e)}")
+        if debug_mode:
+            st.error(f"AI Query Generation Error: {str(e)}")
         # Fallback query
         return {"$or": [
             {"Name": {"$regex": user_query, "$options": "i"}},
             {"Medical Condition": {"$regex": user_query, "$options": "i"}},
             {"Doctor": {"$regex": user_query, "$options": "i"}}
         ]}
+
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
 
@@ -251,7 +267,7 @@ if search_button:
             patients = fetch_patient_details(user_query)
 
         if patients:
-            st.success(f"Found {len(patients)} matching records")
+            st.success(f"Found {len(patients)} unique patient records")
             for patient in patients:
                 st.markdown(
                     f"""
