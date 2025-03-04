@@ -132,8 +132,7 @@ collection = db["patients"]
 
 # ✅ Configure Gemini AI
 genai.configure(api_key="AIzaSyAFnVZdH90z8H6hXtsMT3-ITuOtc_HySQw")
-gemini_model = genai.GenerativeModel(model="gemini-2.0-flash", api_key="AIzaSyAFnVZdH90z8H6hXtsMT3-ITuOtc_HySQw")
-
+gemini_model = genai.GenerativeModel("gemini-2.0-pro-001")
 def generate_mongo_query(user_query):
     prompt = f"""
     Convert the following natural language query into a MongoDB JSON query.
