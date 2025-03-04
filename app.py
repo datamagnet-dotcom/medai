@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 # ✅ Page Configurations
-st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered")
+st.set_page_config(page_title="Hospital Patient Search", page_icon="🏥", layout="centered", initial_sidebar_state="collapsed")
 
 # ✅ Apply professional theme with improved visibility
 custom_css = """
