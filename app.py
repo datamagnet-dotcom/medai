@@ -222,34 +222,38 @@ def fetch_patient_details(user_query):
     if mongo_query:
         try:
             start_time = time.time()
-            # Add unique patient filtering by adding a distinct pipeline stage
-            # This ensures we only get unique patient records
-            pipeline = [
-                {"$match": mongo_query},
-                {"$group": {
-                    "_id": "$Name",  # Group by name to eliminate duplicates
-                    "doc": {"$first": "$$ROOT"}  # Keep the first document for each name
-                }},
-                {"$replaceRoot": {"newRoot": "$doc"}},  # Replace the root with the original document
-                {"$project": {"_id": 0}}  # Remove the _id field
-            ]
             
-            patients = list(collection.aggregate(pipeline, allowDiskUse=True))
+            # Step 1: Find matching patients
+            matching_patients = list(collection.find(mongo_query))
             
+            if not matching_patients:
+                return None  # No patients found
+            
+            # Step 2: Retrieve additional details for each patient
+            for patient in matching_patients:
+                patient_id = patient["_id"]
+                
+                # Fetch linked records from medical_records, appointments, and billing
+                patient["Medical Records"] = list(db["medical_records"].find({"patient_id": patient_id}, {"_id": 0}))
+                patient["Appointments"] = list(db["appointments"].find({"patient_id": patient_id}, {"_id": 0}))
+                patient["Billing"] = list(db["billing"].find({"patient_id": patient_id}, {"_id": 0}))
+
             if debug_mode:
-                st.write(f"Total records found: {len(patients)}")
-            
+                st.write(f"Total records found: {len(matching_patients)}")
+
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
                 return None
 
-            return patients if patients else None
+            return matching_patients if matching_patients else None
+        
         except Exception as e:
             st.error(f"❌ Database Error: {str(e)}")
             if debug_mode:
                 st.exception(e)
             return None
     return None
+
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient details to access medical records</p>', unsafe_allow_html=True)
