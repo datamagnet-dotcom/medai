@@ -284,7 +284,10 @@ if search_button:
                         <p><span class="highlight">Medical Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
                         <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
                         <p><span class="highlight">Room Number:</span> {patient.get('Room Number', 'N/A')}</p>
-                        <p><span class="highlight">Billing Amount:</span> ${patient.get('Billing Amount', 'N/A'):,}</p>
+                        <p><span class="highlight">Billing Amount:</span> ${
+                         f"{patient.get('Billing Amount', 0):,}" if isinstance(patient.get('Billing Amount', 0), (int, float)) else "N/A"
+                          }</p>
+
                         <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
                     </div>
                     """,
