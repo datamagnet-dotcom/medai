@@ -135,32 +135,48 @@ genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
 gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
 
 def generate_mongo_query(user_query):
-    prompt = f"""
-    Convert the following natural language query into a MongoDB JSON query.
-    Consider all relevant fields and use appropriate query operators.
-    For text fields, use case-insensitive regex matches for partial searches.
-
-    Examples:
-    - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
-    - 'Patients with blood type O+' → {{"Blood Type": "O+"}}
-    - 'Show patients aged 30' → {{"Age": 30}}
-    - 'Patients under Dr. Smith' → {{"Doctor": {{"$regex": "Dr. Smith", "$options": "i"}}}}
-    - 'Diabetic patients' → {{"Medical Condition": {{"$regex": "diabetes", "$options": "i"}}}}
-    - 'Admitted on 2023-05-15' → {{"Date of Admission": "2023-05-15"}}
-    - 'Billing over $5000' → {{"Billing Amount": {{"$gt": 5000}}}}
-    - 'Room 205 patients' → {{"Room Number": "205"}}
-
-    Now convert: '{user_query}'
     """
-    try:
-        response = gemini_model.generate_content(prompt)
-        return json.loads(response.text.strip().replace("'", '"'))
-    except json.JSONDecodeError:
-        st.error("❌ Failed to parse AI-generated query")
-        return {}
-    except Exception as e:
-        st.error(f"❌ AI Query Generation Error: {str(e)}")
-        return {}
+    Generates a MongoDB query to search across multiple collections:
+    - Patients: Name, Age, Gender, Blood Type
+    - Medical Records: Conditions
+    - Appointments: Doctor, Hospital
+    - Billing: Insurance Provider
+    """
+    if not user_query:
+        return None
+
+    query = {
+        "$or": [
+            {"Name": {"$regex": user_query, "$options": "i"}},
+            {"Age": int(user_query) if user_query.isdigit() else None},
+            {"Gender": {"$regex": user_query, "$options": "i"}},
+            {"Blood Type": {"$regex": user_query, "$options": "i"}},
+        ]
+    }
+
+    # Search in other collections and fetch matching patient_ids
+    patient_ids = set()
+
+    # Search in medical records
+    medical_match = medical_records.find_one({"medical_condition": {"$regex": user_query, "$options": "i"}})
+    if medical_match:
+        patient_ids.add(medical_match["patient_id"])
+
+    # Search in appointments
+    appointment_match = appointments.find_one({"doctor": {"$regex": user_query, "$options": "i"}})
+    if appointment_match:
+        patient_ids.add(appointment_match["patient_id"])
+
+    # Search in billing
+    billing_match = billing.find_one({"insurance_provider": {"$regex": user_query, "$options": "i"}})
+    if billing_match:
+        patient_ids.add(billing_match["patient_id"])
+
+    # Add patient IDs to query
+    if patient_ids:
+        query["$or"].append({"_id": {"$in": list(patient_ids)}})
+
+    return query
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
@@ -168,7 +184,38 @@ def fetch_patient_details(user_query):
     if mongo_query:
         try:
             start_time = time.time()
-            patients = list(collection.find(mongo_query, {"_id": 0}).limit(50))
+            
+            # Perform lookup to join all collections
+            pipeline = [
+                {"$match": mongo_query},  # Find patient by name, age, etc.
+                {
+                    "$lookup": {
+                        "from": "medical_records",
+                        "localField": "_id",
+                        "foreignField": "patient_id",
+                        "as": "medical_records"
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "appointments",
+                        "localField": "_id",
+                        "foreignField": "patient_id",
+                        "as": "appointments"
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "billing",
+                        "localField": "_id",
+                        "foreignField": "patient_id",
+                        "as": "billing"
+                    }
+                }
+            ]
+            
+            # Run the aggregation pipeline
+            patients = list(collection.aggregate(pipeline))
 
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
@@ -179,6 +226,7 @@ def fetch_patient_details(user_query):
             st.error(f"❌ Database Error: {str(e)}")
             return None
     return None
+
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient details to access medical records</p>', unsafe_allow_html=True)
@@ -195,7 +243,6 @@ if search_button:
             patients = fetch_patient_details(user_query)
 
         if patients:
-            st.success(f"Found {len(patients)} matching records")
             for patient in patients:
                 st.markdown(
                     f"""
@@ -204,17 +251,56 @@ if search_button:
                         <p><span class="highlight">Age:</span> {patient.get('Age', 'N/A')}</p>
                         <p><span class="highlight">Gender:</span> {patient.get('Gender', 'N/A')}</p>
                         <p><span class="highlight">Blood Type:</span> {patient.get('Blood Type', 'N/A')}</p>
-                        <p><span class="highlight">Hospital:</span> {patient.get('Hospital', 'N/A')}</p>
-                        <p><span class="highlight">Doctor:</span> {patient.get('Doctor', 'N/A')}</p>
-                        <p><span class="highlight">Medical Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
-                        <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
-                        <p><span class="highlight">Room Number:</span> {patient.get('Room Number', 'N/A')}</p>
-                        <p><span class="highlight">Billing Amount:</span> ${patient.get('Billing Amount', 'N/A'):,}</p>
-                        <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
+
+                # Medical Records
+                if patient.get("medical_records"):
+                    st.markdown("<h4>🩺 Medical Records</h4>", unsafe_allow_html=True)
+                    for record in patient["medical_records"]:
+                        st.markdown(
+                            f"""
+                            <div class="patient-card">
+                                <p><span class="highlight">Condition:</span> {record.get('medical_condition', 'N/A')}</p>
+                                <p><span class="highlight">Medication:</span> {record.get('medication', 'N/A')}</p>
+                                <p><span class="highlight">Test Results:</span> {record.get('test_results', 'N/A')}</p>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                # Appointments
+                if patient.get("appointments"):
+                    st.markdown("<h4>🏥 Appointments</h4>", unsafe_allow_html=True)
+                    for appointment in patient["appointments"]:
+                        st.markdown(
+                            f"""
+                            <div class="patient-card">
+                                <p><span class="highlight">Doctor:</span> {appointment.get('doctor', 'N/A')}</p>
+                                <p><span class="highlight">Hospital:</span> {appointment.get('hospital', 'N/A')}</p>
+                                <p><span class="highlight">Room Number:</span> {appointment.get('room_number', 'N/A')}</p>
+                                <p><span class="highlight">Admission Date:</span> {appointment.get('date_of_admission', 'N/A')}</p>
+                                <p><span class="highlight">Discharge Date:</span> {appointment.get('discharge_date', 'N/A')}</p>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                # Billing
+                if patient.get("billing"):
+                    st.markdown("<h4>💰 Billing Details</h4>", unsafe_allow_html=True)
+                    for bill in patient["billing"]:
+                        st.markdown(
+                            f"""
+                            <div class="patient-card">
+                                <p><span class="highlight">Insurance Provider:</span> {bill.get('insurance_provider', 'N/A')}</p>
+                                <p><span class="highlight">Billing Amount:</span> ${bill.get('billing_amount', 'N/A'):,}</p>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
         else:
             st.warning("No matching patient records found")
     else:
