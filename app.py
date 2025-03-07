@@ -141,13 +141,6 @@ genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
 gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
 
 def generate_mongo_query(user_query):
-    """
-    Generates a MongoDB query to search across multiple collections:
-    - Patients: Name, Age, Gender, Blood Type
-    - Medical Records: Conditions
-    - Appointments: Doctor, Hospital
-    - Billing: Insurance Provider
-    """
     if not user_query:
         return None
 
@@ -160,29 +153,36 @@ def generate_mongo_query(user_query):
         ]
     }
 
-    # Search in other collections and fetch matching patient_ids
+    # ✅ Ensure we collect related patient IDs
     patient_ids = set()
 
-    # Search in medical records
-    medical_match = medical_records.find_one({"medical_condition": {"$regex": user_query, "$options": "i"}})
+    # ✅ Search in Medical Records
+    medical_match = medical_records_collection.find_one(  # 🔥 Use correct variable name
+        {"medical_condition": {"$regex": user_query, "$options": "i"}}
+    )
     if medical_match:
         patient_ids.add(medical_match["patient_id"])
 
-    # Search in appointments
-    appointment_match = appointments.find_one({"doctor": {"$regex": user_query, "$options": "i"}})
+    # ✅ Search in Appointments
+    appointment_match = appointments_collection.find_one(
+        {"doctor": {"$regex": user_query, "$options": "i"}}
+    )
     if appointment_match:
         patient_ids.add(appointment_match["patient_id"])
 
-    # Search in billing
-    billing_match = billing.find_one({"insurance_provider": {"$regex": user_query, "$options": "i"}})
+    # ✅ Search in Billing
+    billing_match = billing_collection.find_one(
+        {"insurance_provider": {"$regex": user_query, "$options": "i"}}
+    )
     if billing_match:
         patient_ids.add(billing_match["patient_id"])
 
-    # Add patient IDs to query
+    # ✅ If patient IDs were found, include them in the query
     if patient_ids:
         query["$or"].append({"_id": {"$in": list(patient_ids)}})
 
     return query
+
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
