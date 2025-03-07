@@ -221,7 +221,7 @@ def fetch_patient_details(user_query):
             ]
             
             # Run the aggregation pipeline
-            patients = list(collection.aggregate(pipeline))
+            patients = list(patients_collection.aggregate(pipeline))
 
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
