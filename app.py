@@ -124,11 +124,16 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ✅ MongoDB Configuration
+# MongoDB Configuration
 MONGO_URI = "mongodb://sainandan3mn:5855@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
-collection = db["patients"]
+
+# ✅ Define all collections properly
+patients_collection = db["patients"]
+medical_records_collection = db["medical_records"]
+appointments_collection = db["appointments"]
+billing_collection = db["billing"]
 
 # ✅ Configure Gemini AI
 genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
