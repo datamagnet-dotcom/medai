@@ -264,7 +264,7 @@ if search_button:
 
                 # Medical Records
                 if patient.get("medical_records"):
-                    st.markdown("<h4>🩺 Medical Records</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4>Medical Records</h4>", unsafe_allow_html=True)
                     for record in patient["medical_records"]:
                         st.markdown(
                             f"""
@@ -279,7 +279,7 @@ if search_button:
 
                 # Appointments
                 if patient.get("appointments"):
-                    st.markdown("<h4>🏥 Appointments</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4>Appointments</h4>", unsafe_allow_html=True)
                     for appointment in patient["appointments"]:
                         st.markdown(
                             f"""
@@ -296,7 +296,7 @@ if search_button:
 
                 # Billing
                 if patient.get("billing"):
-                    st.markdown("<h4>💰 Billing Details</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4>Billing Details</h4>", unsafe_allow_html=True)
                     for bill in patient["billing"]:
                         st.markdown(
                             f"""
