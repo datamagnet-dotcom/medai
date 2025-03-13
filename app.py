@@ -137,7 +137,7 @@ billing_collection = db["billing"]
 
 
 # ✅ Configure Gemini AI
-genai.configure(api_key="AIzaSyB5bTQbnFOnpaGOweZ7AP0hxJHh7hrHfJ0")
+genai.configure(api_key="AIzaSyCXLplgMd-EWC974nM83ZaiZPOr_Kbfz7M")
 gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
 
 def generate_mongo_query(user_query):
