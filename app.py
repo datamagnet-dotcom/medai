@@ -120,69 +120,47 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # ✅ Display Karexpert logo
 st.markdown("""
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/datamagnet-dotcom/bootcamp2024sai/main/Karexpert.png" alt="Karexpert Logo"> 
+        <img src="https://raw.githubusercontent.com/datamagnet-dotcom/medai/main/Karexpert.png" alt="Karexpert Logo"> 
     </div>
 """, unsafe_allow_html=True)
 
-# MongoDB Configuration
+# ✅ MongoDB Configuration
 MONGO_URI = "mongodb://sainandan3mn:5855@cluster0-shard-00-00.ik5xa.mongodb.net:27017,cluster0-shard-00-01.ik5xa.mongodb.net:27017,cluster0-shard-00-02.ik5xa.mongodb.net:27017/?ssl=true&replicaSet=atlas-6p2mwc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 client = pymongo.MongoClient(MONGO_URI)
 db = client["hospital_db"]
-
-# ✅ Define all collections
-patients_collection = db["patients"]
-medical_records_collection = db["medical_records"]
-appointments_collection = db["appointments"]
-billing_collection = db["billing"]
-
+collection = db["patients"]
 
 # ✅ Configure Gemini AI
-genai.configure(api_key="api")
-gemini_model = genai.GenerativeModel("gemini-1.5-pro-001")
+genai.configure(api_key="AIzaSyCQ7t9zx7vxu25gRCT9XLM2LQdNuX2BZoU")
+gemini_model = genai.GenerativeModel("gemini-pro")
 
 def generate_mongo_query(user_query):
-    if not user_query:
-        return None
+    prompt = f"""
+    Convert the following natural language query into a MongoDB JSON query.
+    Consider all relevant fields and use appropriate query operators.
+    For text fields, use case-insensitive regex matches for partial searches.
 
-    query = {
-        "$or": [
-            {"Name": {"$regex": user_query, "$options": "i"}},
-            {"Age": int(user_query) if user_query.isdigit() else None},
-            {"Gender": {"$regex": user_query, "$options": "i"}},
-            {"Blood Type": {"$regex": user_query, "$options": "i"}},
-        ]
-    }
+    Examples:
+    - 'Find patients named John' → {{"Name": {{"$regex": "John", "$options": "i"}}}}
+    - 'Patients with blood type O+' → {{"Blood Type": "O+"}}
+    - 'Show patients aged 30' → {{"Age": 30}}
+    - 'Patients under Dr. Smith' → {{"Doctor": {{"$regex": "Dr. Smith", "$options": "i"}}}}
+    - 'Diabetic patients' → {{"Medical Condition": {{"$regex": "diabetes", "$options": "i"}}}}
+    - 'Admitted on 2023-05-15' → {{"Date of Admission": "2023-05-15"}}
+    - 'Billing over $5000' → {{"Billing Amount": {{"$gt": 5000}}}}
+    - 'Room 205 patients' → {{"Room Number": "205"}}
 
-    # ✅ Ensure we collect related patient IDs
-    patient_ids = set()
-
-    # ✅ Search in Medical Records
-    medical_match = medical_records_collection.find_one(  # 🔥 Use correct variable name
-        {"medical_condition": {"$regex": user_query, "$options": "i"}}
-    )
-    if medical_match:
-        patient_ids.add(medical_match["patient_id"])
-
-    # ✅ Search in Appointments
-    appointment_match = appointments_collection.find_one(
-        {"doctor": {"$regex": user_query, "$options": "i"}}
-    )
-    if appointment_match:
-        patient_ids.add(appointment_match["patient_id"])
-
-    # ✅ Search in Billing
-    billing_match = billing_collection.find_one(
-        {"insurance_provider": {"$regex": user_query, "$options": "i"}}
-    )
-    if billing_match:
-        patient_ids.add(billing_match["patient_id"])
-
-    # ✅ If patient IDs were found, include them in the query
-    if patient_ids:
-        query["$or"].append({"_id": {"$in": list(patient_ids)}})
-
-    return query
-
+    Now convert: '{user_query}'
+    """
+    try:
+        response = gemini_model.generate_content(prompt)
+        return json.loads(response.text.strip().replace("'", '"'))
+    except json.JSONDecodeError:
+        st.error("❌ Failed to parse AI-generated query")
+        return {}
+    except Exception as e:
+        st.error(f"❌ AI Query Generation Error: {str(e)}")
+        return {}
 
 def fetch_patient_details(user_query):
     mongo_query = generate_mongo_query(user_query)
@@ -190,38 +168,7 @@ def fetch_patient_details(user_query):
     if mongo_query:
         try:
             start_time = time.time()
-            
-            # Perform lookup to join all collections
-            pipeline = [
-                {"$match": mongo_query},  # Find patient by name, age, etc.
-                {
-                    "$lookup": {
-                        "from": "medical_records",
-                        "localField": "_id",
-                        "foreignField": "patient_id",
-                        "as": "medical_records"
-                    }
-                },
-                {
-                    "$lookup": {
-                        "from": "appointments",
-                        "localField": "_id",
-                        "foreignField": "patient_id",
-                        "as": "appointments"
-                    }
-                },
-                {
-                    "$lookup": {
-                        "from": "billing",
-                        "localField": "_id",
-                        "foreignField": "patient_id",
-                        "as": "billing"
-                    }
-                }
-            ]
-            
-            # Run the aggregation pipeline
-            patients = list(patients_collection.aggregate(pipeline))
+            patients = list(collection.find(mongo_query, {"_id": 0}).limit(50))
 
             if time.time() - start_time > 5:
                 st.error("⏳ Query took too long. Try again later.")
@@ -232,7 +179,6 @@ def fetch_patient_details(user_query):
             st.error(f"❌ Database Error: {str(e)}")
             return None
     return None
-
 
 # ✅ Streamlit UI
 st.markdown('<p class="search-text" style="font-weight: bold; font-size: 22px; text-align: center;">Enter patient details to access medical records</p>', unsafe_allow_html=True)
@@ -249,6 +195,7 @@ if search_button:
             patients = fetch_patient_details(user_query)
 
         if patients:
+            st.success(f"Found {len(patients)} matching records")
             for patient in patients:
                 st.markdown(
                     f"""
@@ -257,56 +204,17 @@ if search_button:
                         <p><span class="highlight">Age:</span> {patient.get('Age', 'N/A')}</p>
                         <p><span class="highlight">Gender:</span> {patient.get('Gender', 'N/A')}</p>
                         <p><span class="highlight">Blood Type:</span> {patient.get('Blood Type', 'N/A')}</p>
+                        <p><span class="highlight">Hospital:</span> {patient.get('Hospital', 'N/A')}</p>
+                        <p><span class="highlight">Doctor:</span> {patient.get('Doctor', 'N/A')}</p>
+                        <p><span class="highlight">Medical Condition:</span> {patient.get('Medical Condition', 'N/A')}</p>
+                        <p><span class="highlight">Admission Date:</span> {patient.get('Date of Admission', 'N/A')}</p>
+                        <p><span class="highlight">Room Number:</span> {patient.get('Room Number', 'N/A')}</p>
+                        <p><span class="highlight">Billing Amount:</span> ${patient.get('Billing Amount', 'N/A'):,}</p>
+                        <p><span class="highlight">Test Results:</span> {patient.get('Test Results', 'N/A')}</p>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-
-                # Medical Records
-                if patient.get("medical_records"):
-                    st.markdown("<h4>Medical Records</h4>", unsafe_allow_html=True)
-                    for record in patient["medical_records"]:
-                        st.markdown(
-                            f"""
-                            <div class="patient-card">
-                                <p><span class="highlight">Condition:</span> {record.get('medical_condition', 'N/A')}</p>
-                                <p><span class="highlight">Medication:</span> {record.get('medication', 'N/A')}</p>
-                                <p><span class="highlight">Test Results:</span> {record.get('test_results', 'N/A')}</p>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                # Appointments
-                if patient.get("appointments"):
-                    st.markdown("<h4>Appointments</h4>", unsafe_allow_html=True)
-                    for appointment in patient["appointments"]:
-                        st.markdown(
-                            f"""
-                            <div class="patient-card">
-                                <p><span class="highlight">Doctor:</span> {appointment.get('doctor', 'N/A')}</p>
-                                <p><span class="highlight">Hospital:</span> {appointment.get('hospital', 'N/A')}</p>
-                                <p><span class="highlight">Room Number:</span> {appointment.get('room_number', 'N/A')}</p>
-                                <p><span class="highlight">Admission Date:</span> {appointment.get('date_of_admission', 'N/A')}</p>
-                                <p><span class="highlight">Discharge Date:</span> {appointment.get('discharge_date', 'N/A')}</p>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                # Billing
-                if patient.get("billing"):
-                    st.markdown("<h4>Billing Details</h4>", unsafe_allow_html=True)
-                    for bill in patient["billing"]:
-                        st.markdown(
-                            f"""
-                            <div class="patient-card">
-                                <p><span class="highlight">Insurance Provider:</span> {bill.get('insurance_provider', 'N/A')}</p>
-                                <p><span class="highlight">Billing Amount:</span> ${bill.get('billing_amount', 'N/A'):,}</p>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
         else:
             st.warning("No matching patient records found")
     else:
